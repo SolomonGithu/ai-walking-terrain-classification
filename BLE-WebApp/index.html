@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terrain-Aware Pedometer</title>
+    <style>
+        body {
+            font-family: "Trebuchet MS", sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #FFFFFF;
+            color: #333;
+            padding-top: 5px;
+        }
+        .heading { 
+            display: flex;
+            justify-content: space-between; /* pushes h1 to left and image to right */
+            align-items: flex-start; /* keeps them aligned at the top */             
+        }
+        .circular_img { 
+            float: right;
+            position: relative; width: 60px; height: 60px; overflow: hidden; border-radius: 50%; 
+            border: 2px solid #0787b2;
+        } 
+        .circular_img img { 
+            width: 100%; height: auto; 
+        }
+        h1 {
+            font-size: 1.4em;
+            margin-bottom: 10px;
+        }
+        button {
+            background-color: #FFFFFF;
+            border: 2px solid #0787b2;
+            border-radius: 4px;
+        }
+        .summary {
+            background-color: #F1F2F6;
+            border-radius: 12px;
+            padding: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+        .subtitle, .stat {
+            display: flex;
+            align-items: center;
+            justify-content: left;
+            font-size: 1em;
+            margin-bottom: 5px;
+            flex-wrap: wrap;
+        }
+        .subtitle img, .stat img {
+            width: 20px;
+            height: 20px;
+            margin-right: 6px;
+        }
+        .container {
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+        .row {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            background: #F1F2F6;
+        }
+        .row + .row {
+            border-top: 5px solid #FFFFFF; /* divider line */
+        }
+        .circle {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .circle img {
+            width: 20px;
+            height: 20px;
+        }
+        .text {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start;
+            padding-left: 10px;
+        }
+        .number {
+            font-size: 1.4em;
+            font-weight: bold;
+        }
+        .label {
+            font-size: 0.9em;
+        }
+        footer {
+            text-align: center;
+        }
+        footer img{
+            height: 25px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="heading">
+        <h1>Mapping Your Every Step!</h1>
+        <div class="circular_img">
+            <img src="images/wearable.jpg" alt="wearable">
+        </div>
+    </div>
+    <button onclick="connect()">Link wearable</button>
+
+    <p style="text-align: center;"><b>Today</b></p>
+
+    <div class="summary">
+        <div class="subtitle">
+            <img src="images/shoe-icon.png" alt="Steps">
+            <p>Total: <span id="total_steps"></span> steps</p>
+        </div>
+
+        <div class="stat">
+            <img src="images/cpu-setting-icon.svg" alt="Chip">
+            <p>On-device prediction time: <span id="edge_prediction_time"></span>ms</p>
+        </div>
+    </div>
+    <br>
+    <div class="container">
+
+        <div class="row">
+            <div class="circle" style="border: 4px solid #11C5AA;">
+                <img src="images/walk-icon.jpg" alt="Flat">
+            </div>
+            <div class="text">
+                <div class="number"><span id="steps_flat"></span> steps</div>
+                <div class="label">Flat surface</div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="circle" style="border: 4px solid #FF4401;">
+                <img src="images/climb-up-icon.svg" alt="Uphill">
+            </div>
+            <div class="text">
+                <div class="number"><span id="steps_uphill"></span> steps</div>
+                <div class="label">Uphill</div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="circle" style="border: 4px solid #FE8701;">
+                <img src="images/walk-downhill-icon.svg" alt="Downhill">
+            </div>
+            <div class="text">
+                <div class="number"><span id="steps_downhill"></span> steps</div>
+                <div class="label">Downhill</div>
+            </div>
+        </div>
+
+    </div>
+    
+    <script>
+        const NUS_SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+        const NUS_TX_CHARACTERISTIC = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; // Device -> Browser
+        let txChar;
+
+        var received_data = ''; // stores the data received from BLE device
+        // UI elements
+        const doc_total_steps = document.getElementById('total_steps');
+        const doc_edge_prediction_time = document.getElementById('edge_prediction_time');
+        const doc_steps_flat = document.getElementById('steps_flat');
+        const doc_steps_uphill = document.getElementById('steps_uphill');
+        const doc_steps_downhill = document.getElementById('steps_downhill');
+
+        // Step counter variables
+        let steps_flat = 0;
+        let steps_uphill = 0;
+        let steps_downhill = 0;
+        let total_steps = 0;
+        let edge_prediction_time = 0;
+
+        // Last BLE device readings
+        let last_device_flat = 0;
+        let last_device_uphill = 0;
+        let last_device_downhill = 0;
+
+        const today = new Date().toISOString().split('T')[0];
+
+        window.onload = function() {
+            //resetCache(); // ***** UNCOMMENT TO CLEAR CACHE ON PAGE LOAD ****
+            loadCache();
+        };
+
+        async function connect() {
+            try {
+                const device = await navigator.bluetooth.requestDevice({
+                    filters: [{ services: [NUS_SERVICE_UUID] }]
+                });
+
+                const server = await device.gatt.connect();
+                const service = await server.getPrimaryService(NUS_SERVICE_UUID);
+
+                txChar = await service.getCharacteristic(NUS_TX_CHARACTERISTIC);
+
+                await txChar.startNotifications();
+                txChar.addEventListener('characteristicvaluechanged', handle_BLE_Updates);
+
+                console.log('Connected to XIAO BLE UART');
+                alert('Connected to XIAO BLE UART');
+            } catch (error) {
+                console.log(error);
+                alert('Failed to connect to BLE device!');
+            }
+        }
+
+        // Load cached data if available and for the same day
+        function loadCache() {
+            let saved_total_steps = JSON.parse(localStorage.getItem("saved_total_steps")) || {};
+            let saved_steps_flat = JSON.parse(localStorage.getItem("saved_steps_flat")) || {};
+            let saved_steps_uphill = JSON.parse(localStorage.getItem("saved_steps_uphill")) || {};
+            let saved_steps_downhill = JSON.parse(localStorage.getItem("saved_steps_downhill")) || {};
+
+            if (saved_total_steps.date === today) {
+                steps_flat = saved_steps_flat.steps || 0;
+                steps_uphill = saved_steps_uphill.steps || 0;
+                steps_downhill = saved_steps_downhill.steps || 0;
+                total_steps = saved_total_steps.steps || 0;
+            } else {
+                console.log("Date changed — resetting counters");
+                resetCache();
+            }
+
+            updateUI();
+        }
+
+        function resetCache() {
+            console.log("Clearing cache..");
+            steps_flat = 0;
+            steps_uphill = 0;
+            steps_downhill = 0;
+            total_steps = 0;
+            saveCache();
+        }
+
+        function saveCache() {
+            localStorage.setItem("saved_total_steps", JSON.stringify({ steps: total_steps, date: today }));
+            localStorage.setItem("saved_steps_flat", JSON.stringify({ steps: steps_flat, date: today }));
+            localStorage.setItem("saved_steps_uphill", JSON.stringify({ steps: steps_uphill, date: today }));
+            localStorage.setItem("saved_steps_downhill", JSON.stringify({ steps: steps_downhill, date: today }));
+        }
+
+        function updateUI() {
+            doc_total_steps.innerHTML = total_steps.toLocaleString('en-US');
+            doc_steps_flat.innerHTML = steps_flat.toLocaleString('en-US');
+            doc_steps_uphill.innerHTML = steps_uphill.toLocaleString('en-US');
+            doc_steps_downhill.innerHTML = steps_downhill.toLocaleString('en-US');
+            doc_edge_prediction_time.innerHTML = edge_prediction_time;
+        }
+
+        function handle_BLE_Updates(event) {
+            const received_data = new TextDecoder().decode(event.target.value);
+            //console.log('Received: ' + received_data);
+
+            let [edge_prediction_time_val, new_flat, new_uphill, new_downhill] =
+                received_data.split(',').map(v => Number(v.trim()));
+            edge_prediction_time = edge_prediction_time_val;
+            console.log("*** RECEIVED ***");
+            console.log("   On-device prediction time: " + edge_prediction_time);
+            console.log("   Flat surface steps: " + new_flat);
+            console.log("   Uphill surface steps: " + new_uphill);
+            console.log("   Downhill surface steps: " + new_downhill);
+            console.log("   Total steps: " + (new_flat + new_uphill + new_downhill));
+            console.log("*****************");
+
+            // Compute difference between received BLE value and last value
+            let delta_flat = new_flat - last_device_flat;
+            let delta_uphill = new_uphill - last_device_uphill;
+            let delta_downhill = new_downhill - last_device_downhill;
+
+            // Handle device reset
+            if (delta_flat < 0) delta_flat = new_flat;
+            if (delta_uphill < 0) delta_uphill = new_uphill;
+            if (delta_downhill < 0) delta_downhill = new_downhill;
+
+            // Update the last BLE readings
+            last_device_flat = new_flat;
+            last_device_uphill = new_uphill;
+            last_device_downhill = new_downhill;
+
+            // Update cumulative steps
+            steps_flat += delta_flat;
+            steps_uphill += delta_uphill;
+            steps_downhill += delta_downhill;
+            total_steps = steps_flat + steps_uphill + steps_downhill;
+
+            saveCache();
+            updateUI();
+        }
+    </script>
+    <footer style="margin-top: 20px;">
+        <p>Powered by:</p>
+        <a href="https://www.seeedstudio.com"><img src="images/Seeed Studio Logo.jpg" alt="Seed Studio"></a>
+        <a href="https://edgeimpulse.com"><img src="images/Edge Impulse Full Logo_RGB.png" alt="Edge Impulse"></a>
+    </footer>
+</body>
+</html>
