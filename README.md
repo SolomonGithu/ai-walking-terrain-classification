@@ -31,7 +31,7 @@ I used the Edge Impulse platform to collect data, train a motion classification 
 
 - Install the downloaded library to Arduino IDE. At this point, also install the [Arduino BLE library](Libraries/ArduinoBLE-master.zip).
 
-- Finally, upload the [inference sketch](Arduino-sketches/XIAO_nRF52840_BLE_terrain_classification/XIAO_nRF52840_BLE_terrain_classification.ino) to the XIAO nRF52840 Sense.
+- Open the [inference sketch](Arduino-sketches/XIAO_nRF52840_BLE_terrain_classification/XIAO_nRF52840_BLE_terrain_classification.ino) and ensure the Edge Impulse inferencing .h library is correctly included (the library name matches the Edge Impulse project name). Finally, upload the sketch to the XIAO nRF52840 Sense.
 
 - Copy the HTML [mobile WebApp file](BLE-WebApp/index_mobile.html) to a smartphone and open it with a browser that supports Web Bluetooth API such as Google Chrome.
 
