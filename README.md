@@ -47,6 +47,10 @@ Start walking and you will see terrain classification results from the board. Th
 
 ![Steps classification](media/step_classification.png)
 
+Below are some snapshots of the mobile Web App.
+
+![Web App](media/WebApp.png)
+
 ## Development environment
 
 - Arduino IDE version 2.3.6
