@@ -1,20 +1,22 @@
-# Adding terrain classification to step counting wearables
+# Enhancing walk fitness with terrain classification
 
 ![Cover image](media/cover_image.png)
 
 This demo research project tackles a significant shortcoming of step counting wearables/applications in that they do not integrate terrain analysis which is significant to calorie burning and cardiovascular benefits. For example, walking uphill requires more effort from the heart, muscles and lungs, and more calories are also burned.
 
-To implement terrain classification while walking, the project leverages embedded AI technology which allows us to run light-weight AI models on microcontrollers connected to sensors. I used the XIAO nRF52840 Sense given that it has an onboard 6 DOF IMU (LSM6DS3TR-C), Bluetooth LE 5.2, ultra-Low power consumption, and it's small form factor makes it a great fit for a wearable. The onboard IMU is used to capture angle of a surface from a foot level while the BLE connectivity is used to send terrain classification results to a simple offline BLE WebApp that we can access on our mobile devices (there is a [desktop version](BLE-WebApp/index.html) as well, but mobile webapp is the most convenient).
+To implement terrain classification while walking, the project leverages embedded AI technology which allows us to run light-weight AI models on microcontrollers connected to sensors. I utilized the XIAO nRF52840 Sense given that it has an onboard 6 DOF IMU (LSM6DS3TR-C), Bluetooth LE 5.2, ultra-Low power consumption, and it's small form factor makes it a great fit for a wearable. The onboard IMU is used to capture angle of a surface from a foot level while the BLE connectivity is used to send terrain classification results to a simple offline BLE WebApp that we can access on our mobile devices (there is a [desktop version](BLE-WebApp/index.html) as well, but mobile webapp is the most convenient).
 
-![Wearable](media/wearable.jpg)
+![Wearable](media/wearable.png)
 
 By using the accelerometer data from the IMU, we can observe that there is a data "trend" between the different slopes from a time series representation of motion data. This tells us that an AI model is capable of analyzing these trends and learning the terrain slopes, adding to step detection/calculation which they are exceptionally good at.   
 
 ![Angle of sensing](media/wearable_terrain_angle.jpg)
 
-I used the Edge Impulse platform to collect data, train a motion classification model and finally deploy it to the XIAO nRF52840 Sense board. You can find the public project here: [Walk terrain classification](https://studio.edgeimpulse.com/public/775241/latest).
+I used the Edge Impulse platform to collect data, train a motion classification model and finally deploy it to the XIAO nRF52840 Sense board. You can find the public project with this link: [Walk terrain classification](https://studio.edgeimpulse.com/public/775241/latest).
 
 3D print files for the wearable are available in the [CAD-designs](CAD-designs/) folder and [Printables.com](https://www.printables.com/model/1418110-xiao-nrf52840-sense-case).
+
+Link to project documentation: [Hackster.io](https://www.hackster.io/sologithu/enhancing-walk-fitness-with-terrain-classification-4985cd)
 
 ## Quick Start
 
